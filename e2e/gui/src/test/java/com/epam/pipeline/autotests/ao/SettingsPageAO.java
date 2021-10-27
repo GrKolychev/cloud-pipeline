@@ -713,7 +713,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             entry(PRICE_TYPE, context().find(byXpath(
                                     format("//div/b[text()='%s']/following::div/input", "Allowed price types")))),
                             entry(CONFIGURE, context().$(byXpath(".//span[.='Can run as this user:']/following-sibling::a"))),
-                            entry(IMPERSONATE, context().$(button("IMPERSONATE")))
+                            entry(IMPERSONATE, context().$(button("IMPERSONATE"))),
+                            entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span")))
                     );
 
                     public EditUserPopup(UsersTabAO parentAO) {
@@ -835,6 +836,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     public NavigationHomeAO impersonate() {
                         click(IMPERSONATE);
                         return new NavigationHomeAO();
+                    }
+
+                    public EditUserPopup doNotMountStoragesSelect (boolean isSelected) {
+                        if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
+                                (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
+                            click(DO_NOT_MOUNT_STORAGES);
+                        }
+                        return this;
                     }
                 }
             }
