@@ -15,15 +15,25 @@
 
 package com.epam.release.notes.agent.service;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import retrofit2.Call;
 import retrofit2.HttpException;
 import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 public interface RestApiClient {
 
-    default  <R> R execute(Call<R> call) {
+    String TOKEN_HEADER = "Authorization";
+    String ACCEPT_HEADER_TITLE = "accept";
+
+    default <R> R execute(Call<R> call) {
         try {
             Response<R> response = call.execute();
             if (response.isSuccessful()) {
@@ -34,5 +44,33 @@ public interface RestApiClient {
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    default <T> T createApi(final String baseUrl,
+                            final String token,
+                            final Class<T> apiClientClass,
+                            final long connectTimeout,
+                            final long readTimeout,
+                            final String acceptHeader) {
+        final OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .connectTimeout(connectTimeout, TimeUnit.SECONDS)
+                .readTimeout(readTimeout, TimeUnit.SECONDS)
+                .addInterceptor(chain -> {
+                    final Request original = chain.request();
+                    final Request request = original.newBuilder()
+                            .header(TOKEN_HEADER, token)
+                            .header(ACCEPT_HEADER_TITLE, acceptHeader)
+                            .build();
+                    return chain.proceed(request);
+                })
+                .build();
+        return new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(JacksonConverterFactory
+                        .create(new JsonMapper()
+                                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)))
+                .client(okHttpClient)
+                .build()
+                .create(apiClientClass);
     }
 }
